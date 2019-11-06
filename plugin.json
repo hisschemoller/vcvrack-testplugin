@@ -1,0 +1,26 @@
+{
+  "slug": "TestPlugin",
+  "name": "Test Plugin",
+  "version": "1.0.0",
+  "license": "MIT",
+  "brand": "Hisschem\u00f6ller",
+  "author": "Wouter Hisschem\u00f6ller",
+  "authorEmail": "email@hisschemoller.com",
+  "authorUrl": "https://www.hisschemoller.com",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "MyModule",
+      "name": "My Module",
+      "description": "Simple sine oscillator",
+      "tags": [
+        "VCO",
+        "Oscillator"
+      ]
+    }
+  ]
+}
