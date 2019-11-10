@@ -21,6 +21,19 @@
         "VCO",
         "Oscillator"
       ]
+    },
+    {
+      "slug": "WavPlay",
+      "name": "WavPlay",
+      "description": "Single Wav audiofile playback.",
+      "tags": [
+        "sampler",
+        "sample",
+        "player",
+        "generator",
+        "audio",
+        "playback"
+      ]
     }
   ]
 }
