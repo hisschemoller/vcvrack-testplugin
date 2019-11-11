@@ -40,11 +40,6 @@ struct WavPlay : Module {
  * @see https://vcvrack.com/docs/structrack_1_1app_1_1ModuleWidget.html
  */
 struct WavPlayWidget : ModuleWidget {
-
-  /**
-   * Constructor
-   * @param {WavPlay*} module Pointer to the Module.
-   */
 	WavPlayWidget(WavPlay* module) {
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/WavPlay.svg")));
@@ -61,8 +56,21 @@ struct WavPlayWidget : ModuleWidget {
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 108.713)), module, WavPlay::AUDIOOUT_OUTPUT));
 
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(15.24, 25.81)), module, WavPlay::ISPLAYING_LIGHT));
-	}
+	};
+
+	void appendContextMenu(Menu *menu) override;
 };
+
+void WavPlayWidget::appendContextMenu(Menu *menu) {
+
+	// empty spacer
+	MenuLabel *spacerLabel = new MenuLabel();
+	menu->addChild(spacerLabel);
+
+	MenuItem *menuItem = new MenuItem();
+	menuItem->text = "Load WAV file";
+	menu->addChild(menuItem);
+}
 
 /**
  * Creates a headless Module. (whatever that means)
