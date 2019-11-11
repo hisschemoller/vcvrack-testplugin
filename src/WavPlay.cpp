@@ -23,6 +23,8 @@ struct WavPlay : Module {
 		NUM_LIGHTS
 	};
 
+	bool isPlaying = false;
+
 	// Constructs a Module with no params, inputs, outputs, and lights.
 	WavPlay() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -31,8 +33,16 @@ struct WavPlay : Module {
 
 	// Advances the module by one audio sample.
 	void process(const ProcessArgs& args) override {
+		lights[ISPLAYING_LIGHT].setBrightness(isPlaying ? 1.f : 0.f);
 	}
+
+	void loadWavFile();
 };
+
+void WavPlay::loadWavFile() {
+	DEBUG("loadWavFile");
+	isPlaying = true;
+}
 
 /**
  * Manages an engine::Module in the rack.
@@ -40,7 +50,11 @@ struct WavPlay : Module {
  * @see https://vcvrack.com/docs/structrack_1_1app_1_1ModuleWidget.html
  */
 struct WavPlayWidget : ModuleWidget {
+	WavPlay* wavPlay;
+	
 	WavPlayWidget(WavPlay* module) {
+		wavPlay = module;
+
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/WavPlay.svg")));
 
@@ -58,19 +72,25 @@ struct WavPlayWidget : ModuleWidget {
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(15.24, 25.81)), module, WavPlay::ISPLAYING_LIGHT));
 	};
 
-	void appendContextMenu(Menu *menu) override;
+	void appendContextMenu(Menu *menu) override {
+	
+		// empty spacer
+		MenuLabel *spacerLabel = new MenuLabel();
+		menu->addChild(spacerLabel);
+
+		struct LoadWavMenuItem : MenuItem {
+			WavPlay *wavPlay;
+			void onAction(const event::Action& e) override {
+				wavPlay->loadWavFile();
+			};
+		};
+
+		LoadWavMenuItem *loadWavMenuItem = new LoadWavMenuItem();
+		loadWavMenuItem->text = "Load WAV file";
+		loadWavMenuItem->wavPlay = wavPlay;
+		menu->addChild(loadWavMenuItem);
+	};
 };
-
-void WavPlayWidget::appendContextMenu(Menu *menu) {
-
-	// empty spacer
-	MenuLabel *spacerLabel = new MenuLabel();
-	menu->addChild(spacerLabel);
-
-	MenuItem *menuItem = new MenuItem();
-	menuItem->text = "Load WAV file";
-	menu->addChild(menuItem);
-}
 
 /**
  * Creates a headless Module. (whatever that means)
