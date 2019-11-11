@@ -1,4 +1,5 @@
 #include "plugin.hpp"
+#include "osdialog.h"
 
 /**
  * DSP processor
@@ -23,6 +24,7 @@ struct WavPlay : Module {
 		NUM_LIGHTS
 	};
 
+	std::string lastPath = "";
 	bool isPlaying = false;
 
 	// Constructs a Module with no params, inputs, outputs, and lights.
@@ -36,10 +38,10 @@ struct WavPlay : Module {
 		lights[ISPLAYING_LIGHT].setBrightness(isPlaying ? 1.f : 0.f);
 	}
 
-	void loadWavFile();
+	void loadWavFile(std::string path);
 };
 
-void WavPlay::loadWavFile() {
+void WavPlay::loadWavFile(std::string path) {
 	DEBUG("loadWavFile");
 	isPlaying = true;
 }
@@ -81,7 +83,13 @@ struct WavPlayWidget : ModuleWidget {
 		struct LoadWavMenuItem : MenuItem {
 			WavPlay *wavPlay;
 			void onAction(const event::Action& e) override {
-				wavPlay->loadWavFile();
+				std::string dir = wavPlay->lastPath.empty() ? asset::user("") : rack::string::directory(wavPlay->lastPath);
+				char *path = osdialog_file(OSDIALOG_OPEN, dir.c_str(), NULL, NULL);
+				if (path) {
+					wavPlay->loadWavFile(path);
+					wavPlay->lastPath = path;
+					free(path);
+				}
 			};
 		};
 
