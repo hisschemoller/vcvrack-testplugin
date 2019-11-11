@@ -1,6 +1,10 @@
 #include "plugin.hpp"
 
-
+/**
+ * DSP processor
+ * rack::engine::Module
+ * @see https://vcvrack.com/docs/structrack_1_1engine_1_1Module.html
+ */
 struct WavPlay : Module {
 	enum ParamIds {
 		PITCH_PARAM,
@@ -19,17 +23,28 @@ struct WavPlay : Module {
 		NUM_LIGHTS
 	};
 
+	// Constructs a Module with no params, inputs, outputs, and lights.
 	WavPlay() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(PITCH_PARAM, 0.f, 1.f, 0.f, "");
 	}
 
+	// Advances the module by one audio sample.
 	void process(const ProcessArgs& args) override {
 	}
 };
 
-
+/**
+ * Manages an engine::Module in the rack.
+ * rack::app::ModuleWidget
+ * @see https://vcvrack.com/docs/structrack_1_1app_1_1ModuleWidget.html
+ */
 struct WavPlayWidget : ModuleWidget {
+
+  /**
+   * Constructor
+   * @param {WavPlay*} module Pointer to the Module.
+   */
 	WavPlayWidget(WavPlay* module) {
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/WavPlay.svg")));
@@ -49,5 +64,11 @@ struct WavPlayWidget : ModuleWidget {
 	}
 };
 
-
+/**
+ * Creates a headless Module. (whatever that means)
+ * rack::plugin::Model
+ * @param {String} Module name.
+ * @returns {engine::Module}
+ * @see https://vcvrack.com/docs/structrack_1_1plugin_1_1Model.html
+ */
 Model* modelWavPlay = createModel<WavPlay, WavPlayWidget>("WavPlay");
