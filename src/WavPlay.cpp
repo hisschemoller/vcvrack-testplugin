@@ -1,5 +1,6 @@
 #include "plugin.hpp"
 #include "cmath"
+#define DR_WAV_IMPLEMENTATION
 #include "dr_wav.h"
 #include "osdialog.h"
 
@@ -40,6 +41,8 @@ struct WavPlay : Module {
 	WavPlay() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(PITCH_PARAM, 0.f, 1.f, 0.f, "");
+		playBuffer.resize(1);
+		playBuffer[0].resize(0);
 	}
 
 	// Advances the module by one audio sample.
