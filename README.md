@@ -8,6 +8,9 @@ It contains the tutorial plugin from the online manual: https://vcvrack.com/manu
 
 The VCV Rack API v1 is here: https://vcvrack.com/docs/index.html 
 
+- How to create a context menu item
+  - https://community.vcvrack.com/t/adding-context-menu-modes-to-your-module/5865/2
+
 ## Debugging
 
 See /rack-sdk/include/logger.hpp for levels of log messages, for example

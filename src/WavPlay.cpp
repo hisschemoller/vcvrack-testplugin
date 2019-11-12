@@ -1,4 +1,6 @@
 #include "plugin.hpp"
+#include "cmath"
+#include "dr_wav.h"
 #include "osdialog.h"
 
 /**
@@ -24,8 +26,15 @@ struct WavPlay : Module {
 		NUM_LIGHTS
 	};
 
-	std::string lastPath = "";
+	bool isLoading = false;
+	bool isFileLoaded = true;
 	bool isPlaying = false;
+	unsigned int channels;
+	unsigned int sampleRate;
+	drwav_uint64 totalSampleCount;
+	std::string lastPath = "";
+	std::string fileDesc = "";
+	std::vector<std::vector<float>> playBuffer;
 
 	// Constructs a Module with no params, inputs, outputs, and lights.
 	WavPlay() {
@@ -41,9 +50,33 @@ struct WavPlay : Module {
 	void loadWavFile(std::string path);
 };
 
+/**
+ * Load a Wav audio file.
+ * @param path File path.
+ */
 void WavPlay::loadWavFile(std::string path) {
-	DEBUG("loadWavFile");
-	isPlaying = true;
+	isLoading = true;
+	unsigned int _channels;
+	unsigned int _sampleRate;
+	drwav_uint64 _totalSampleCount;
+	float* pSampleData;
+	pSampleData = drwav_open_and_read_file_f32(path.c_str(), &_channels, &_sampleRate, &_totalSampleCount);
+
+	if (pSampleData != NULL) {
+		channels = _channels;
+		sampleRate = _sampleRate;
+		playBuffer[0].clear();
+		for (unsigned int i = 0; i < _totalSampleCount; i++) {
+			playBuffer[0].push_back(pSampleData[i]);
+		}
+		totalSampleCount = playBuffer[0].size();
+		drwav_free(pSampleData);
+
+		isLoading = false;
+		isFileLoaded = true;
+		fileDesc = rack::string::filename(path);
+		DEBUG("loadWavFile");
+	}
 }
 
 /**
