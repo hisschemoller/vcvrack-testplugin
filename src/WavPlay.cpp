@@ -16,11 +16,12 @@ struct WavPlay : Module {
 		NUM_PARAMS
 	};
 	enum InputIds {
+		TRIGGER_INPUT,
 		PITCH_INPUT,
 		NUM_INPUTS
 	};
 	enum OutputIds {
-		AUDIOOUT_OUTPUT,
+		AUDIO_OUTPUT,
 		NUM_OUTPUTS
 	};
 	enum LightIds {
@@ -97,10 +98,10 @@ void WavPlay::dataFromJson(json_t* rootJ) {
  * @param args.sampleTime Time since app started??? measured in seconds???
  */
 void WavPlay::process(const ProcessArgs& args) {
-	if (inputs[PITCH_INPUT].active) {
+	if (inputs[TRIGGER_INPUT].active) {
 
 		// if the input value triggers the schmittrigger to flip HIGH
-		if (playTrigger.process(inputs[PITCH_INPUT].value)) {
+		if (playTrigger.process(inputs[TRIGGER_INPUT].value)) {
 			isPlaying = true;
 			samplePos = 0;
 		}
@@ -109,14 +110,14 @@ void WavPlay::process(const ProcessArgs& args) {
 	// play and advance sample
 	if ((!isLoading) && (isPlaying) && ((std::abs(floor(samplePos)) < totalSampleCount))) {
 		if (samplePos >= 0) {
-			outputs[AUDIOOUT_OUTPUT].value = 5 * playBuffer[0][floor(samplePos)];
+			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(samplePos)];
 		} else {
-			outputs[AUDIOOUT_OUTPUT].value = 5 * playBuffer[0][floor(totalSampleCount - 1 + samplePos)];
+			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(totalSampleCount - 1 + samplePos)];
 		}
 		samplePos = samplePos + 1;
 	} else {
 		isPlaying = false;
-		outputs[AUDIOOUT_OUTPUT].value = 0;
+		outputs[AUDIO_OUTPUT].value = 0;
 	}
 
 	// light on while sample plays
@@ -216,11 +217,12 @@ struct WavPlayWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 46.063)), module, WavPlay::PITCH_PARAM));
+		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 43.947)), module, WavPlay::PITCH_PARAM));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 77.478)), module, WavPlay::PITCH_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 65.535)), module, WavPlay::TRIGGER_INPUT));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 87.124)), module, WavPlay::PITCH_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 108.713)), module, WavPlay::AUDIOOUT_OUTPUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 108.713)), module, WavPlay::AUDIO_OUTPUT));
 
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(15.24, 25.81)), module, WavPlay::ISPLAYING_LIGHT));
 	};
