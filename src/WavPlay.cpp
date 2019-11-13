@@ -114,7 +114,7 @@ void WavPlay::process(const ProcessArgs& args) {
 		} else {
 			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(totalSampleCount - 1 + samplePos)];
 		}
-		samplePos = samplePos + 1;
+		samplePos = samplePos + 1 + (params[PITCH_PARAM].value / 1);
 	} else {
 		isPlaying = false;
 		outputs[AUDIO_OUTPUT].value = 0;
