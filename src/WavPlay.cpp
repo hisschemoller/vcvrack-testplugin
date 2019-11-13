@@ -13,6 +13,7 @@
 struct WavPlay : Module {
 	enum ParamIds {
 		PITCH_PARAM,
+		TRIG_MODE_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -46,6 +47,7 @@ struct WavPlay : Module {
 	// SchmittTrigger: Turns HIGH when value reaches 1.f, turns LOW when value reaches 0.f.
 	dsp::SchmittTrigger loadsampleTrigger;
 	dsp::SchmittTrigger playTrigger;
+	dsp::SchmittTrigger stopTrigger;
 	dsp::SchmittTrigger nextTrigger;
 	dsp::SchmittTrigger prevTrigger;
 
@@ -98,12 +100,19 @@ void WavPlay::dataFromJson(json_t* rootJ) {
  * @param args.sampleTime Time since app started??? measured in seconds???
  */
 void WavPlay::process(const ProcessArgs& args) {
-	if (inputs[TRIGGER_INPUT].active) {
+	if (inputs[TRIGGER_INPUT].isConnected()) {
 
 		// if the input value triggers the schmittrigger to flip HIGH
 		if (playTrigger.process(inputs[TRIGGER_INPUT].value)) {
 			isPlaying = true;
 			samplePos = 0;
+		}
+
+		// if in gate mode and the input value reaches 0
+		if (params[TRIG_MODE_PARAM].value > 0.0f) {
+			if (stopTrigger.process(1 - inputs[TRIGGER_INPUT].value)) {
+				isPlaying = false;
+			}
 		}
 	}
 
@@ -220,6 +229,10 @@ struct WavPlayWidget : ModuleWidget {
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 43.947)), module, WavPlay::PITCH_PARAM));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 65.535)), module, WavPlay::TRIGGER_INPUT));
+		
+
+		addParam(createParamCentered<CKSS>(mm2px(Vec(24.0, 65.535)), module, WavPlay::TRIG_MODE_PARAM));
+
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 87.124)), module, WavPlay::PITCH_INPUT));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 108.713)), module, WavPlay::AUDIO_OUTPUT));
