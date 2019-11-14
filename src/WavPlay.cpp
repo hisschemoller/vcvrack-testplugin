@@ -123,7 +123,12 @@ void WavPlay::process(const ProcessArgs& args) {
 		} else {
 			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(totalSampleCount - 1 + samplePos)];
 		}
-		samplePos = samplePos + 1 + (params[PITCH_PARAM].value / 1);
+
+		if (inputs[PITCH_INPUT].isConnected()) {
+			samplePos = samplePos + powf(2.0, inputs[PITCH_INPUT].value) + (params[PITCH_PARAM].value / 3);
+		} else {
+			samplePos = samplePos + 1 + (params[PITCH_PARAM].value / 3);
+		}
 	} else {
 		isPlaying = false;
 		outputs[AUDIO_OUTPUT].value = 0;
