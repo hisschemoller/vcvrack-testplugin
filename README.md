@@ -4,6 +4,31 @@ Test plugin to experiment with VCV Rack modules.
 
 It contains the tutorial plugin from the online manual: https://vcvrack.com/manual/PluginDevelopmentTutorial.html
 
+## Compiling
+
+Compile, build or build and install:
+
+```bash
+RACK_DIR=<Rack SDK folder> make
+RACK_DIR=<Rack SDK folder> make dist
+RACK_DIR=<Rack SDK folder> make install
+```
+
+## Panels
+
+Panel widget colours in components
+
+- Param: #ff0000
+- Input: #00ff00
+- Output: #0000ff
+- Custom widget: #ffff00
+
+Create module source file from panel:
+
+```bash
+<Rack SDK>/helper.py createmodule <module slug> res/<module slug>.svg src/<module slug>.cpp
+```
+
 ## Documentation
 
 The VCV Rack API v1 is here: https://vcvrack.com/docs/index.html 
