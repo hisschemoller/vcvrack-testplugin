@@ -4,6 +4,12 @@ Test plugin to experiment with VCV Rack modules.
 
 It contains the tutorial plugin from the online manual: https://vcvrack.com/manual/PluginDevelopmentTutorial.html
 
+Create a template plugin:
+
+```bash
+<Rack SDK directory>/helper.py createplugin MyPlugin
+```
+
 ## Compiling
 
 Compile, build or build and install:
@@ -26,7 +32,7 @@ Panel widget colours in components
 Create module source file from panel:
 
 ```bash
-<Rack SDK>/helper.py createmodule <module slug> res/<module slug>.svg src/<module slug>.cpp
+<Rack SDK directory>/helper.py createmodule <module slug> res/<module slug>.svg src/<module slug>.cpp
 ```
 
 ## Documentation
