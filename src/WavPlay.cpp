@@ -126,6 +126,14 @@ void WavPlay::dataFromJson(json_t* rootJ) {
  * @param args.sampleTime Time since app started??? measured in seconds???
  */
 void WavPlay::process(const ProcessArgs& args) {
+
+	// play mode change
+	if (playModeTrigger.process(params[PLAY_MODE_PARAM].value)) {
+		int nextPlayMode = (playMode + 1) % NUM_PLAYMODES;
+		setPlayMode(nextPlayMode);
+	}
+
+	// trigger input changes
 	if (inputs[TRIGGER_INPUT].isConnected()) {
 
 		// if the input value triggers the schmittrigger to flip HIGH
@@ -142,14 +150,8 @@ void WavPlay::process(const ProcessArgs& args) {
 		}
 	}
 
-	// check for play mode change
-	if (playModeTrigger.process(params[PLAY_MODE_PARAM].value)) {
-		int nextPlayMode = (playMode + 1) % NUM_PLAYMODES;
-		setPlayMode(nextPlayMode);
-	}
-
 	// play and advance sample
-	if ((!isLoading) && (isPlaying) && ((std::abs(floor(samplePos)) < totalSampleCount))) {
+	if (!isLoading && isPlaying) { // && (std::abs(floor(samplePos)) < totalSampleCount)) {
 
 		// play
 		if (samplePos >= 0) {
@@ -158,11 +160,25 @@ void WavPlay::process(const ProcessArgs& args) {
 			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(totalSampleCount - 1 + samplePos)];
 		}
 
-		// advance position
+		// relative advance of sample position
+		float sampleAdvance;
 		if (inputs[PITCH_INPUT].isConnected()) {
-			samplePos = samplePos + powf(2.0, inputs[PITCH_INPUT].value) + (params[PITCH_PARAM].value / 3);
+			sampleAdvance = powf(2.0, inputs[PITCH_INPUT].value) + (params[PITCH_PARAM].value / 3);
 		} else {
-			samplePos = samplePos + 1 + (params[PITCH_PARAM].value / 3);
+			sampleAdvance = 1 + (params[PITCH_PARAM].value / 3);
+		}
+
+		// set new sample position based on play mode
+		switch (playMode) {
+
+			case LOOP:
+				samplePos	= fmod(samplePos + sampleAdvance, totalSampleCount);
+				break;
+
+			case LOOP_OFF:
+			default:
+				samplePos	= samplePos + sampleAdvance;
+				isPlaying = std::abs(floor(samplePos)) < totalSampleCount;
 		}
 	} else {
 
