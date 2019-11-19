@@ -50,6 +50,7 @@ struct WavPlay : Module {
 	bool isFileLoaded = true;
 	bool isPlaying = false;
 	bool isReloading = false;
+	bool isPingPongLoopreverse = false;
 	PlayMode playMode = LOOP_OFF;
 	int sampnumber = 0;
 	float samplePos = 0;
@@ -175,7 +176,27 @@ void WavPlay::process(const ProcessArgs& args) {
 				samplePos	= fmod(samplePos + sampleAdvance, totalSampleCount);
 				break;
 
+			case LOOP_PINGPONG:
+				if (isPingPongLoopreverse) {
+					if (samplePos - sampleAdvance >= 0) {
+						samplePos	= samplePos - sampleAdvance;
+					} else {
+						samplePos = std::abs(samplePos - sampleAdvance);
+						isPingPongLoopreverse = false;
+					}
+				} else {
+					if (samplePos + sampleAdvance < totalSampleCount) {
+						samplePos	= samplePos + sampleAdvance;
+					} else {
+						samplePos	= totalSampleCount + totalSampleCount - samplePos - sampleAdvance;
+						isPingPongLoopreverse = true;
+					}
+				}
+				break;
+
 			case LOOP_OFF:
+			case LOOP_XFADE:
+				// TODO: implement
 			default:
 				samplePos	= samplePos + sampleAdvance;
 				isPlaying = std::abs(floor(samplePos)) < totalSampleCount;
@@ -197,6 +218,19 @@ void WavPlay::process(const ProcessArgs& args) {
  */
 void WavPlay::setPlayMode(int mode) {
 	playMode = static_cast<PlayMode>(mode);
+
+	switch (playMode) {
+
+		case LOOP_PINGPONG:
+			isPingPongLoopreverse = false;
+			break;
+
+		case LOOP:
+		case LOOP_OFF:
+		case LOOP_XFADE:
+		default:
+			break;
+	}
 
 	// update the play mode lights
 	lights[LOOP_OFF_LIGHT].setBrightness(playMode == LOOP_OFF ? 1.f : 0.f);
