@@ -11,9 +11,12 @@
  * @see https://vcvrack.com/docs/structrack_1_1engine_1_1Module.html
  */
 struct WavPlay : Module {
+
+	// IDs of inputs, outputs, params, etc. widgets on the panel
 	enum ParamIds {
 		PITCH_PARAM,
 		TRIG_MODE_PARAM,
+		PLAY_MODE_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -26,14 +29,28 @@ struct WavPlay : Module {
 		NUM_OUTPUTS
 	};
 	enum LightIds {
+		LOOP_OFF_LIGHT,
+		LOOP_LIGHT,
+		LOOP_PINGPONG_LIGHT,
+		LOOP_XFADE_LIGHT,
 		ISPLAYING_LIGHT,
 		NUM_LIGHTS
+	};
+
+	// sample playback modes
+	enum PlayMode {
+		LOOP_OFF,
+		LOOP,
+		LOOP_PINGPONG,
+		LOOP_XFADE,
+		NUM_PLAYMODES
 	};
 
 	bool isLoading = false;
 	bool isFileLoaded = true;
 	bool isPlaying = false;
 	bool isReloading = false;
+	PlayMode playMode = LOOP_OFF;
 	int sampnumber = 0;
 	float samplePos = 0;
 	unsigned int channels;
@@ -50,6 +67,7 @@ struct WavPlay : Module {
 	dsp::SchmittTrigger stopTrigger;
 	dsp::SchmittTrigger nextTrigger;
 	dsp::SchmittTrigger prevTrigger;
+	dsp::SchmittTrigger playModeTrigger;
 
 	// Constructs a Module with no params, inputs, outputs, and lights.
 	WavPlay() {
@@ -61,6 +79,9 @@ struct WavPlay : Module {
 
 	// advances the module by one audio sample
 	void process(const ProcessArgs& args) override;
+
+	// set play mode, loop etc.
+	void setPlayMode(int mode);
 
 	// load a wav file
 	void loadWavFile(std::string path);
@@ -76,7 +97,8 @@ struct WavPlay : Module {
  */
 json_t *WavPlay::dataToJson() {
 	json_t *rootJ = json_object();
-	json_object_set_new(rootJ, "lastPath", json_string(lastPath.c_str()));	
+	json_object_set_new(rootJ, "lastPath", json_string(lastPath.c_str()));
+	json_object_set_new(rootJ, "playMode", json_integer(playMode));
 	return rootJ;
 }
 
@@ -91,6 +113,10 @@ void WavPlay::dataFromJson(json_t* rootJ) {
 		isReloading = true ;
 		loadWavFile(lastPath);
 	}
+
+	json_t *playModeJ = json_object_get(rootJ, "playMode");
+	int mode = playModeJ ? json_integer_value(playModeJ) : 0;
+	setPlayMode(mode);
 }
 
 /**
@@ -116,26 +142,51 @@ void WavPlay::process(const ProcessArgs& args) {
 		}
 	}
 
+	// check for play mode change
+	if (playModeTrigger.process(params[PLAY_MODE_PARAM].value)) {
+		int nextPlayMode = (playMode + 1) % NUM_PLAYMODES;
+		setPlayMode(nextPlayMode);
+	}
+
 	// play and advance sample
 	if ((!isLoading) && (isPlaying) && ((std::abs(floor(samplePos)) < totalSampleCount))) {
+
+		// play
 		if (samplePos >= 0) {
 			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(samplePos)];
 		} else {
 			outputs[AUDIO_OUTPUT].value = 5 * playBuffer[0][floor(totalSampleCount - 1 + samplePos)];
 		}
 
+		// advance position
 		if (inputs[PITCH_INPUT].isConnected()) {
 			samplePos = samplePos + powf(2.0, inputs[PITCH_INPUT].value) + (params[PITCH_PARAM].value / 3);
 		} else {
 			samplePos = samplePos + 1 + (params[PITCH_PARAM].value / 3);
 		}
 	} else {
+
+		// stop play
 		isPlaying = false;
 		outputs[AUDIO_OUTPUT].value = 0;
 	}
 
 	// light on while sample plays
 	lights[ISPLAYING_LIGHT].setBrightness(isPlaying ? 1.f : 0.f);
+}
+
+/**
+ * Set the sample play mode.
+ * @param mode Play mode integer to be cast to enum PlayMode.
+ */
+void WavPlay::setPlayMode(int mode) {
+	playMode = static_cast<PlayMode>(mode);
+
+	// update the play mode lights
+	lights[LOOP_OFF_LIGHT].setBrightness(playMode == LOOP_OFF ? 1.f : 0.f);
+	lights[LOOP_LIGHT].setBrightness(playMode == LOOP ? 1.f : 0.f);
+	lights[LOOP_PINGPONG_LIGHT].setBrightness(playMode == LOOP_PINGPONG ? 1.f : 0.f);
+	lights[LOOP_XFADE_LIGHT].setBrightness(playMode == LOOP_XFADE ? 1.f : 0.f);
 }
 
 /**
@@ -220,6 +271,10 @@ void WavPlay::loadWavFile(std::string path) {
 struct WavPlayWidget : ModuleWidget {
 	WavPlay* wavPlay;
 	
+	/**
+	 * Constructor.
+	 * @param module The module to be controlled.
+	 */
 	WavPlayWidget(WavPlay* module) {
 		wavPlay = module;
 
@@ -232,19 +287,23 @@ struct WavPlayWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 43.947)), module, WavPlay::PITCH_PARAM));
-
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 65.535)), module, WavPlay::TRIGGER_INPUT));
-		
-
 		addParam(createParamCentered<CKSS>(mm2px(Vec(24.0, 65.535)), module, WavPlay::TRIG_MODE_PARAM));
-
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 87.124)), module, WavPlay::PITCH_INPUT));
-
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 108.713)), module, WavPlay::AUDIO_OUTPUT));
-
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(15.24, 25.81)), module, WavPlay::ISPLAYING_LIGHT));
+
+		addParam(createParamCentered<TL1105>(mm2px(Vec(6.0, 65.0)), module, WavPlay::PLAY_MODE_PARAM));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.0, 58.0)), module, WavPlay::LOOP_OFF_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.0, 53.0)), module, WavPlay::LOOP_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.0, 48.0)), module, WavPlay::LOOP_PINGPONG_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.0, 43.0)), module, WavPlay::LOOP_XFADE_LIGHT));
 	};
 
+	/**
+	 * Add context menu items.
+	 * @param menu The module's context menu.
+	 */
 	void appendContextMenu(Menu *menu) override {
 	
 		// empty spacer
